@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ESCOTEL ASISTENCIAS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --wa-green: #00a884;
+    --wa-green-dark: #008069;
+    --wa-bg: #f0f2f5;
+    --wa-chat-bg: #efeae2;
+    --wa-msg-out: #d9fdd3;
+    --wa-msg-in: #ffffff;
+    --wa-icon: #54656f;
+    --wa-text: #111b21;
+    --wa-text-sec: #667781;
+    --wa-border: #e9edef;
+    --wa-panel-bg: #ffffff;
+    --wa-blue: #53bdeb;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #dfe5e7;
+    color: var(--wa-text);
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  button, input { font: inherit; }
+  .wa-app {
+    display: flex;
+    width: 100%;
+    max-width: 1600px;
+    height: 100vh;
+    margin: 0 auto;
+    box-shadow: 0 2px 24px rgba(0, 0, 0, .18);
+    overflow: hidden;
+  }
+  .wa-sidebar {
+    width: 390px;
+    min-width: 330px;
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-panel-bg);
+    border-right: 1px solid var(--wa-border);
+  }
+  .wa-sidebar-header, .wa-chat-header {
+    min-height: 59px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--wa-bg);
+  }
+  .wa-sidebar-header { justify-content: space-between; }
+  .wa-avatar, .wa-chat-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+    background: linear-gradient(135deg, #00a884, #128c7e);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .3px;
+  }
+  .wa-avatar img, .wa-chat-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #fff;
+  }
+  .wa-avatar:has(img), .wa-chat-avatar:has(img) {
+    background: transparent;
+    padding: 0;
+    overflow: hidden;
+  }
+  .wa-icon-btn {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--wa-icon);
+    cursor: pointer;
+  }
+  .wa-icon-btn:hover { background: var(--wa-border); }
+  .wa-search-bar {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--wa-border);
+  }
+  .wa-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--wa-bg);
+    color: var(--wa-text-sec);
+    font-size: 14px;
+  }
+  .wa-filter-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--wa-border);
+  }
+  .wa-tab {
+    border: 0;
+    border-radius: 99px;
+    padding: 5px 12px;
+    color: var(--wa-icon);
+    background: var(--wa-bg);
+    font-size: 13px;
+  }
+  .wa-tab.active { color: var(--wa-green-dark); background: #d9fdd3; }
+  .wa-chat-list { flex: 1; overflow-y: auto; }
+  .wa-chat-item {
+    display: flex;
+    gap: 13px;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f0f2f5;
+    position: relative;
+  }
+  .wa-chat-item::after {
+    content: '';
+    position: absolute;
+    left: 78px;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--wa-border);
+  }
+  .wa-chat-info { flex: 1; min-width: 0; }
+  .wa-chat-top, .wa-chat-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .wa-chat-name { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-chat-time { color: var(--wa-text-sec); font-size: 12px; white-space: nowrap; }
+  .wa-chat-preview { color: var(--wa-text-sec); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-demo-note {
+    padding: 16px;
+    border-top: 1px solid var(--wa-border);
+    color: var(--wa-text-sec);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .wa-chat-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-chat-bg);
+    position: relative;
+  }
+  .wa-chat-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M0 0h80v80H0z' fill='%23d9d0c1' opacity='.12'/%3E%3Cpath d='M20 20c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10S20 25.5 20 20z' fill='none' stroke='%23c1b89a' stroke-width='.5' opacity='.3'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .wa-chat-header { position: relative; z-index: 2; }
+  .wa-chat-contact { flex: 1; min-width: 0; }
+  .wa-chat-contact-name { font-size: 16px; font-weight: 500; }
+  .wa-chat-contact-status { color: var(--wa-text-sec); font-size: 13px; }
+  .wa-messages {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 12px 6%;
+    overflow-y: auto;
+  }
+  .wa-date-sep {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+  }
+  .wa-date-sep span {
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+    color: var(--wa-icon);
+    font-size: 12px;
+  }
+  .wa-msg-row { display: flex; margin-bottom: 2px; }
+  .wa-msg-row.out { justify-content: flex-end; }
+  .wa-msg-row.in { justify-content: flex-start; }
+  .wa-bubble {
+    max-width: min(65%, 680px);
+    min-width: 84px;
+    padding: 7px 8px 20px 9px;
+    border-radius: 7.5px;
+    position: relative;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .12);
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .wa-msg-row.out .wa-bubble { background: var(--wa-msg-out); border-top-right-radius: 0; }
+  .wa-msg-row.in .wa-bubble { background: var(--wa-msg-in); border-top-left-radius: 0; }
+  .wa-bubble-text { padding-right: 46px; font-size: 14.5px; line-height: 1.4; }
+  .wa-bubble-meta {
+    position: absolute;
+    right: 7px;
+    bottom: 4px;
+    color: var(--wa-text-sec);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .wa-img-msg {
+    display: block;
+    width: min(320px, 58vw);
+    max-height: 360px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--wa-border);
+  }
+  .wa-audio-msg {
+    width: min(320px, 58vw);
+    min-width: 220px;
+  }
+  .wa-media-label { margin-top: 6px; padding-right: 46px; font-size: 13px; color: var(--wa-text-sec); }
+  .wa-pending {
+    position: relative;
+    z-index: 2;
+    display: none;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 16px;
+    background: #fff;
+    border-top: 1px solid var(--wa-border);
+    color: var(--wa-text-sec);
+    font-size: 13px;
+  }
+  .wa-pending.show { display: flex; }
+  .wa-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--wa-bg);
+  }
+  .wa-chip button {
+    border: 0;
+    background: transparent;
+    color: var(--wa-icon);
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .wa-chat-footer {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--wa-bg);
+  }
+  .wa-footer-actions { display: flex; gap: 2px; align-items: center; }
+  .wa-input-box {
+    flex: 1;
+    min-height: 42px;
+    max-height: 110px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fff;
+    overflow-y: auto;
+    outline: 0;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .06);
+  }
+  .wa-input-box:empty::before { content: attr(data-placeholder); color: var(--wa-text-sec); }
+  .wa-send-btn {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wa-green);
+    color: #fff;
+    cursor: pointer;
+  }
+  .wa-send-btn:hover { background: var(--wa-green-dark); }
+  .wa-recording { color: #d93025; background: #fde8e6; }
+  .wa-hidden { display: none; }
+  .wa-status {
+    position: absolute;
+    left: 16px;
+    bottom: 64px;
+    z-index: 3;
+    max-width: calc(100% - 32px);
+    padding: 8px 10px;
+    border-radius: 8px;
+    display: none;
+    color: #fff;
+    background: rgba(17, 27, 33, .85);
+    font-size: 13px;
+  }
+  .wa-status.show { display: block; }
+  @media (max-width: 760px) {
+    .wa-sidebar { display: none; }
+    .wa-bubble { max-width: 86%; }
+    .wa-chat-footer { padding: 8px; gap: 4px; }
+    .wa-footer-actions { gap: 0; }
+    .wa-icon-btn { width: 36px; height: 36px; }
+    .wa-send-btn { width: 40px; height: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="wa-app">
+  <aside class="wa-sidebar">
+    <div class="wa-sidebar-header">
+      <div class="wa-avatar"><img src="/whatsapp/foto-perfil.png" alt="Tú" /></div>
+      <div>
+        <button id="resetButton" class="wa-icon-btn" title="Reiniciar demo" aria-label="Reiniciar demo">
+          <!-- <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V2L7 7l5 5V8c3.31 0 6 2.69 6 6a6 6 0 0 1-10.24 4.24l-1.42 1.42A8 8 0 1 0 12 5z"/></svg> -->
+        </button>
+      </div>
+    </div>
+    <div class="wa-search-bar">
+      <div class="wa-search-inner">Buscar o empezar un chat nuevo</div>
+    </div>
+    <div class="wa-filter-tabs">
+      <button class="wa-tab active">Todos</button>
+      <button class="wa-tab">Sin leer</button>
+      <button class="wa-tab">Demo</button>
+    </div>
+    <div class="wa-chat-list">
+      <div class="wa-chat-item">
+        <div class="wa-chat-avatar"><img src="/whatsapp/escotel-logo.png" alt="ESCOTEL" style="width:100%;height:100%;border-radius:50%;object-fit:cover" /></div>
+        <div class="wa-chat-info">
+          <div class="wa-chat-top">
+            <span class="wa-chat-name">ESCOTEL ASISTENCIAS</span>
+            <span id="previewTime" class="wa-chat-time">ahora</span>
+          </div>
+          <div class="wa-chat-bottom">
+            <span id="chatPreview" class="wa-chat-preview">Demo de captura de identidad</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wa-demo-note">
+      Puedes escribir texto, enviar imágenes o grabar audios.
+    </div>
+  </aside>
+
+  <main class="wa-chat-area">
+    <div class="wa-chat-header">
+      <div class="wa-chat-avatar"><img src="/whatsapp/escotel-logo.png" alt="ESCOTEL" style="width:100%;height:100%;border-radius:50%;object-fit:cover" /></div>
+      <div class="wa-chat-contact">
+        <div class="wa-chat-contact-name">ESCOTEL ASISTENCIAS</div>
+        <div class="wa-chat-contact-status">en línea</div>
+      </div>
+      <button id="mobileResetButton" class="wa-icon-btn" title="Reiniciar demo" aria-label="Reiniciar demo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V2L7 7l5 5V8c3.31 0 6 2.69 6 6a6 6 0 0 1-10.24 4.24l-1.42 1.42A8 8 0 1 0 12 5z"/></svg>
+      </button>
+    </div>
+
+    <div id="messages" class="wa-messages"></div>
+    <div id="status" class="wa-status"></div>
+    <div id="pending" class="wa-pending"></div>
+
+    <div class="wa-chat-footer">
+      <div class="wa-footer-actions">
+        <button id="imageButton" class="wa-icon-btn" title="Adjuntar imagen" aria-label="Adjuntar imagen">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        </button>
+        <button id="audioFileButton" class="wa-icon-btn" title="Adjuntar audio" aria-label="Adjuntar audio">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        </button>
+        <button id="recordButton" class="wa-icon-btn" title="Grabar audio" aria-label="Grabar audio">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 15 6.7 12H5c0 3.42 2.72 6.23 6 6.72V22h2v-3.28c3.28-.49 6-3.3 6-6.72h-1.7z"/></svg>
+        </button>
+      </div>
+      <div id="messageInput" class="wa-input-box" contenteditable="true" data-placeholder="Escribe un mensaje"></div>
+      <button id="sendButton" class="wa-send-btn" title="Enviar" aria-label="Enviar">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<input id="imageInput" class="wa-hidden" type="file" accept="image/*" />
+<input id="audioInput" class="wa-hidden" type="file" accept="audio/*" />
+
+<script>
+  const CASE_ID = 'CASE-DEMO-001';
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('messageInput');
+  const sendButton = document.getElementById('sendButton');
+  const imageButton = document.getElementById('imageButton');
+  const audioFileButton = document.getElementById('audioFileButton');
+  const recordButton = document.getElementById('recordButton');
+  const imageInput = document.getElementById('imageInput');
+  const audioInput = document.getElementById('audioInput');
+  const pendingEl = document.getElementById('pending');
+  const statusEl = document.getElementById('status');
+  const resetButton = document.getElementById('resetButton');
+  const mobileResetButton = document.getElementById('mobileResetButton');
+  const chatPreview = document.getElementById('chatPreview');
+  const previewTime = document.getElementById('previewTime');
+
+  let pendingImage = null;
+  let pendingAudio = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let audioStream = null;
+  let lastRenderedVersion = null;
+
+  sendButton.addEventListener('click', sendMessage);
+  inputEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+  imageButton.addEventListener('click', () => imageInput.click());
+  audioFileButton.addEventListener('click', () => audioInput.click());
+  imageInput.addEventListener('change', () => {
+    pendingImage = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+    renderPending();
+  });
+  audioInput.addEventListener('change', () => {
+    pendingAudio = audioInput.files && audioInput.files[0] ? audioInput.files[0] : null;
+    renderPending();
+  });
+  recordButton.addEventListener('click', toggleRecording);
+  resetButton.addEventListener('click', resetCase);
+  mobileResetButton.addEventListener('click', resetCase);
+  window.addEventListener('paste', handlePaste);
+
+  refreshCase();
+  setInterval(refreshCase, 1000);
+
+  async function sendMessage() {
+    const text = inputEl.innerText.trim();
+    const form = new FormData();
+    form.append('caseId', CASE_ID);
+    form.append('text', text);
+
+    if (pendingImage) form.append('image', pendingImage, pendingImage.name || 'imagen.png');
+    if (pendingAudio) form.append('audio', pendingAudio, pendingAudio.name || 'audio.webm');
+
+    sendButton.disabled = true;
+
+    try {
+      const response = await fetch('/demo/messages', { method: 'POST', body: form });
+      if (!response.ok) throw new Error('No se pudo enviar el mensaje');
+
+      inputEl.innerText = '';
+      pendingImage = null;
+      pendingAudio = null;
+      imageInput.value = '';
+      audioInput.value = '';
+      renderPending();
+      await refreshCase(true);
+    } catch (error) {
+      showStatus(error.message || 'No se pudo enviar el mensaje');
+    } finally {
+      sendButton.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  async function refreshCase(force = false) {
+    try {
+      const response = await fetch(`/demo/cases/${CASE_ID}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const versionKey = `${data.caseVersion}:${data.messages.length}:${data.updatedAt}`;
+
+      if (!force && versionKey === lastRenderedVersion) return;
+      lastRenderedVersion = versionKey;
+      renderMessages(data.messages || []);
+      updatePreview(data.messages || []);
+    } catch {
+      // Polling is intentionally silent to keep the chat natural.
+    }
+  }
+
+  function renderMessages(messages) {
+    messagesEl.innerHTML = '<div class="wa-date-sep"><span>HOY</span></div>';
+
+    for (const message of messages) {
+      const row = document.createElement('div');
+      row.className = `wa-msg-row ${message.direction === 'inbound' ? 'out' : 'in'}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'wa-bubble';
+
+      if (message.type === 'text') {
+        const text = document.createElement('div');
+        text.className = 'wa-bubble-text';
+        renderWhatsAppText(text, message.text);
+        bubble.appendChild(text);
+      }
+
+      if (message.type === 'image') {
+        const image = document.createElement('img');
+        image.className = 'wa-img-msg';
+        image.src = message.media.downloadUrl;
+        image.alt = message.media.filename || 'Imagen recibida';
+        bubble.appendChild(image);
+        bubble.appendChild(mediaLabel('Imagen recibida'));
+      }
+
+      if (message.type === 'audio') {
+        const audio = document.createElement('audio');
+        audio.className = 'wa-audio-msg';
+        audio.controls = true;
+        audio.src = message.media.downloadUrl;
+        bubble.appendChild(audio);
+        bubble.appendChild(mediaLabel('Audio recibido'));
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'wa-bubble-meta';
+      meta.textContent = formatTime(message.createdAt);
+      bubble.appendChild(meta);
+      row.appendChild(bubble);
+      messagesEl.appendChild(row);
+    }
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function mediaLabel(text) {
+    const label = document.createElement('div');
+    label.className = 'wa-media-label';
+    label.textContent = text;
+    return label;
+  }
+
+  function renderWhatsAppText(element, value) {
+    const parts = String(value || '').split(/(\*[^*\n]+\*)/g);
+
+    for (const part of parts) {
+      if (!part) continue;
+
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        const strong = document.createElement('strong');
+        strong.textContent = part.slice(1, -1);
+        element.appendChild(strong);
+        continue;
+      }
+
+      element.appendChild(document.createTextNode(part));
+    }
+  }
+
+  function updatePreview(messages) {
+    const last = messages[messages.length - 1];
+    if (!last) return;
+
+    chatPreview.textContent = previewFor(last);
+    previewTime.textContent = formatTime(last.createdAt);
+  }
+
+  function previewFor(message) {
+    if (message.type === 'text') return message.text.replace(/\*/g, '').replace(/\s+/g, ' ').slice(0, 80);
+    if (message.type === 'image') return 'Imagen recibida';
+    if (message.type === 'audio') return 'Audio recibido';
+    return 'Mensaje recibido';
+  }
+
+  function renderPending() {
+    pendingEl.innerHTML = '';
+    const chips = [];
+    if (pendingImage) chips.push(createChip(`Imagen: ${pendingImage.name || 'pegada'}`, () => { pendingImage = null; imageInput.value = ''; renderPending(); }));
+    if (pendingAudio) chips.push(createChip(`Audio: ${pendingAudio.name || 'grabado'}`, () => { pendingAudio = null; audioInput.value = ''; renderPending(); }));
+
+    pendingEl.classList.toggle('show', chips.length > 0);
+    for (const chip of chips) pendingEl.appendChild(chip);
+  }
+
+  function createChip(text, onRemove) {
+    const chip = document.createElement('span');
+    chip.className = 'wa-chip';
+    chip.textContent = text;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'x';
+    button.addEventListener('click', onRemove);
+    chip.appendChild(button);
+
+    return chip;
+  }
+
+  async function toggleRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      return;
+    }
+
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      showStatus('Este navegador no permite grabar audio desde aquí');
+      return;
+    }
+
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(audioStream);
+      mediaRecorder.addEventListener('dataavailable', (event) => {
+        if (event.data && event.data.size > 0) audioChunks.push(event.data);
+      });
+      mediaRecorder.addEventListener('stop', () => {
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunks, { type: mimeType });
+        pendingAudio = new File([blob], `audio-${Date.now()}.webm`, { type: mimeType });
+        stopAudioTracks();
+        recordButton.classList.remove('wa-recording');
+        recordButton.title = 'Grabar audio';
+        renderPending();
+      });
+      mediaRecorder.start();
+      recordButton.classList.add('wa-recording');
+      recordButton.title = 'Detener grabación';
+    } catch {
+      showStatus('No se pudo acceder al micrófono');
+      stopAudioTracks();
+    }
+  }
+
+  function stopAudioTracks() {
+    if (audioStream) {
+      for (const track of audioStream.getTracks()) track.stop();
+    }
+    audioStream = null;
+  }
+
+  function handlePaste(event) {
+    const items = event.clipboardData && event.clipboardData.items ? Array.from(event.clipboardData.items) : [];
+    const imageItem = items.find((item) => item.type.startsWith('image/'));
+    if (!imageItem) return;
+
+    const blob = imageItem.getAsFile();
+    if (!blob) return;
+
+    event.preventDefault();
+    pendingImage = new File([blob], `imagen-pegada-${Date.now()}.png`, { type: blob.type || 'image/png' });
+    renderPending();
+  }
+
+  async function resetCase() {
+    try {
+      const response = await fetch(`/demo/cases/${CASE_ID}/reset`, { method: 'POST' });
+      if (!response.ok) throw new Error('No se pudo reiniciar la demo');
+
+      inputEl.innerText = '';
+      pendingImage = null;
+      pendingAudio = null;
+      imageInput.value = '';
+      audioInput.value = '';
+      renderPending();
+      lastRenderedVersion = null;
+      await refreshCase(true);
+    } catch (error) {
+      showStatus(error.message || 'No se pudo reiniciar la demo');
+    }
+  }
+
+  function showStatus(text) {
+    statusEl.textContent = text;
+    statusEl.classList.add('show');
+    setTimeout(() => statusEl.classList.remove('show'), 2800);
+  }
+
+  function formatTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  }
+</script>
+</body>
+</html>
