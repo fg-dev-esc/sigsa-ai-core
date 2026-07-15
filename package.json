@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev:ai-core": "tsx apps/ai-core/src/main.ts",
-    "dev:identity-worker": "tsx apps/ai-core/src/workers/identity-intake.worker.ts",
+    "dev:identity-worker": "tsx apps/ai-core/src/workers/main.ts",
     "dev:fake-backend": "tsx apps/fake-backend/src/main.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"

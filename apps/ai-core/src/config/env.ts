@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { z } from 'zod';
 
 const envSchema = z.object({
+  PORT: z.coerce.number().optional(),
   AI_CORE_PORT: z.coerce.number().default(3000),
   BACKEND_BASE_URL: z.string().url().default('http://localhost:4000'),
   BACKEND_CASE_PATH: z.string().default('/cases'),
