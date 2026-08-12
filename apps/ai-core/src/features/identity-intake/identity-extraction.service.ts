@@ -116,7 +116,12 @@ Reglas:
 - No inventes datos.
 - Si un dato no aparece o no es legible, usa value null, confidence 0 y source none.
 - La poliza puede contener letras y numeros.
-- El nombre y apellido deben venir de la persona asegurada o solicitante.
+- Todos los mensajes pertenecen a la persona asegurada o solicitante; examina el contenido completo sin depender de su redaccion o tono.
+- Extrae nombres aunque aparezcan en frases informales, saludos, texto con errores ortograficos o sin expresiones como "me llamo".
+- Una declaracion explicita como "me llamo" o "mi nombre es" tiene prioridad sobre una mencion informal.
+- Si hay valores distintos para el mismo dato, usa el valor explicitamente declarado mas reciente; si ninguno es explicito, usa la mencion mas reciente con mayor contexto.
+- No corrijas ni reemplaces silenciosamente nombres poco comunes; conserva el valor escrito en la evidencia.
+- Un solo nombre corresponde a firstName y deja lastName en null. Dos o mas palabras de nombre corresponden a firstName y lastName segun su orden natural.
 - El source debe ser el canal original de la evidencia, no el formato intermedio.
 - Usa source image si el dato viene de image_text, aunque image_text sea texto OCR.
 - Usa source audio si el dato viene de audio_transcript, aunque audio_transcript sea una transcripcion.
