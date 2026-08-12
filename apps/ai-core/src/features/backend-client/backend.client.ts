@@ -27,7 +27,7 @@ export class BackendClient {
     logStep('worker', 'backend case received', {
       status: response.status,
       caseId: caseData.caseId,
-      caseVersion: caseData.caseVersion,
+      caseVersionId: caseData.caseVersionId,
       messages: caseData.messages.map((message) => ({
         messageId: message.messageId,
         type: message.type,
@@ -46,7 +46,7 @@ export class BackendClient {
       url,
       payload: {
         caseId: result.caseId,
-        caseVersion: result.caseVersion,
+        caseVersionId: result.caseVersionId,
         status: result.status,
         missing: result.missing,
         fields: result.fields

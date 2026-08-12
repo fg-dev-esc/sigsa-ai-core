@@ -31,7 +31,7 @@ export type IdentityValidatedField = {
 
 export type IdentityIntakeResult = {
   caseId: string;
-  caseVersion: number;
+  caseVersionId: number;
   status: 'complete' | 'needs_input';
   fields: {
     policyNumber: string | null;

@@ -26,7 +26,7 @@ export class ProcessIdentityIntakeUseCase {
 
     logStep('worker', 'case loaded', {
       caseId: caseData.caseId,
-      caseVersion: caseData.caseVersion,
+      caseVersionId: caseData.caseVersionId,
       messages: caseData.messages.length
     });
 
@@ -38,7 +38,7 @@ export class ProcessIdentityIntakeUseCase {
 
     const result = this.identityValidation.validate({
       caseId: caseData.caseId,
-      caseVersion: job.caseVersion,
+      caseVersionId: caseData.caseVersionId,
       extraction,
       correlationId: job.correlationId
     });

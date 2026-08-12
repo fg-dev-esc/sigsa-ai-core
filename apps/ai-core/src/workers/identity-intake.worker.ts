@@ -15,7 +15,6 @@ export function startIdentityIntakeWorker() {
         logStep('worker', 'job started', {
           caseId: job.data.caseId,
           jobId: job.id,
-          caseVersion: job.data.caseVersion,
           correlationId: job.data.correlationId
         });
 
@@ -24,14 +23,12 @@ export function startIdentityIntakeWorker() {
         logStep('worker', 'job completed', {
           caseId: job.data.caseId,
           jobId: job.id,
-          caseVersion: job.data.caseVersion,
           correlationId: job.data.correlationId
         });
       } catch (error) {
         logError('worker', 'job failed', error, {
           caseId: job.data.caseId,
           jobId: job.id,
-          caseVersion: job.data.caseVersion,
           correlationId: job.data.correlationId
         });
         throw error;

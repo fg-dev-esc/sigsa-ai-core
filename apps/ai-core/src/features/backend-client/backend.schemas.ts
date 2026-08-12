@@ -1,16 +1,20 @@
 import { z } from 'zod';
 
 const textMessageSchema = z.object({
-  messageId: z.string(),
+  caseVersionId: z.number().int().positive(),
   direction: z.enum(['inbound', 'outbound']),
   type: z.literal('text'),
   text: z.string(),
   media: z.null().optional(),
   createdAt: z.string()
-});
+}).transform(({ caseVersionId, ...message }) => ({
+  ...message,
+  caseVersionId,
+  messageId: String(caseVersionId)
+}));
 
 const mediaMessageSchema = z.object({
-  messageId: z.string(),
+  caseVersionId: z.number().int().positive(),
   direction: z.enum(['inbound', 'outbound']),
   type: z.enum(['audio', 'image', 'document']),
   text: z.null().optional(),
@@ -22,16 +26,22 @@ const mediaMessageSchema = z.object({
     downloadUrl: z.string().url()
   }),
   createdAt: z.string()
-});
+}).transform(({ caseVersionId, ...message }) => ({
+  ...message,
+  caseVersionId,
+  messageId: String(caseVersionId)
+}));
 
 export const caseSchema = z.object({
   caseId: z.string(),
-  caseVersion: z.number(),
   status: z.string(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-  messages: z.array(z.union([textMessageSchema, mediaMessageSchema]))
-});
+  messages: z.array(z.union([textMessageSchema, mediaMessageSchema])).min(1)
+}).transform((caseData) => ({
+  ...caseData,
+  caseVersionId: Math.max(...caseData.messages.map((message) => message.caseVersionId))
+}));
 
 export type BackendCase = z.infer<typeof caseSchema>;
 export type BackendMessage = BackendCase['messages'][number];

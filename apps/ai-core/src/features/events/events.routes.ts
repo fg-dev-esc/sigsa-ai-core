@@ -34,7 +34,6 @@ export function createEventsRouter() {
       logStep('ai-core', 'job queued', {
         queue: 'identity-intake.queue',
         caseId: event.caseId,
-        caseVersion: event.caseVersion,
         jobId
       });
 

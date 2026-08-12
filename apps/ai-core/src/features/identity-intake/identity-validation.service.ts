@@ -11,7 +11,7 @@ type FieldName = 'policyNumber' | 'firstName' | 'lastName';
 export class IdentityValidationService {
   validate(input: {
     caseId: string;
-    caseVersion: number;
+    caseVersionId: number;
     extraction: IdentityExtraction;
     correlationId: string;
   }): IdentityIntakeResult {
@@ -24,7 +24,7 @@ export class IdentityValidationService {
     const missing = (Object.keys(fields) as FieldName[]).filter((field) => fields[field].status !== 'valid');
     return {
       caseId: input.caseId,
-      caseVersion: input.caseVersion,
+      caseVersionId: input.caseVersionId,
       status: missing.length === 0 ? 'complete' : 'needs_input',
       fields: {
         policyNumber: fields.policyNumber.value,
