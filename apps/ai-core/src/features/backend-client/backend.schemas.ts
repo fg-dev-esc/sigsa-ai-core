@@ -2,19 +2,20 @@ import { z } from 'zod';
 
 const textMessageSchema = z.object({
   caseVersionId: z.number().int().positive(),
-  direction: z.enum(['inbound', 'outbound']),
+  direction: z.enum(['inbound', 'outbound']).optional(),
   type: z.literal('text'),
   text: z.string(),
   media: z.null().optional(),
   createdAt: z.string()
 }).transform(({ caseVersionId, ...message }) => ({
   ...message,
+  direction: 'inbound' as const,
   caseVersionId
 }));
 
 const mediaMessageSchema = z.object({
   caseVersionId: z.number().int().positive(),
-  direction: z.enum(['inbound', 'outbound']),
+  direction: z.enum(['inbound', 'outbound']).optional(),
   type: z.enum(['audio', 'image', 'document']),
   text: z.null().optional(),
   media: z.object({
@@ -27,6 +28,7 @@ const mediaMessageSchema = z.object({
   createdAt: z.string()
 }).transform(({ caseVersionId, ...message }) => ({
   ...message,
+  direction: 'inbound' as const,
   caseVersionId
 }));
 
