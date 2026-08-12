@@ -83,8 +83,8 @@ export class ProcessIdentityIntakeUseCase {
       }
 
       evidence.push({
-        id: `${message.messageId}:document`,
-        sourceMessageId: message.messageId,
+        id: `${message.caseVersionId}:document`,
+        sourceCaseVersionId: message.caseVersionId,
         type: 'document_text',
         content: 'Document processing is not enabled in identity intake phase 1.',
         createdAt: message.createdAt,
@@ -100,7 +100,7 @@ export class ProcessIdentityIntakeUseCase {
       return await build();
     } catch (error) {
       logError('worker', 'media evidence skipped', error, {
-        messageId: message.messageId,
+        caseVersionId: message.caseVersionId,
         type: message.type,
         mediaId: message.media.mediaId,
         downloadUrl: message.media.downloadUrl
@@ -122,8 +122,8 @@ export class ProcessIdentityIntakeUseCase {
     const transcript = await this.audioTranscription.transcribe(media);
 
     return {
-      id: `${message.messageId}:audio`,
-      sourceMessageId: message.messageId,
+      id: `${message.caseVersionId}:audio`,
+      sourceCaseVersionId: message.caseVersionId,
       type: 'audio_transcript',
       content: transcript,
       createdAt: message.createdAt,
@@ -143,8 +143,8 @@ export class ProcessIdentityIntakeUseCase {
     const text = await this.imageOcr.extractText(media);
 
     return {
-      id: `${message.messageId}:image`,
-      sourceMessageId: message.messageId,
+      id: `${message.caseVersionId}:image`,
+      sourceCaseVersionId: message.caseVersionId,
       type: 'image_text',
       content: text,
       createdAt: message.createdAt,
@@ -168,8 +168,8 @@ function countEvidence(evidence: EvidenceItem[]) {
 
 function textEvidence(message: Extract<BackendMessage, { type: 'text' }>): EvidenceItem {
   return {
-    id: `${message.messageId}:text`,
-    sourceMessageId: message.messageId,
+    id: `${message.caseVersionId}:text`,
+    sourceCaseVersionId: message.caseVersionId,
     type: 'text',
     content: message.text,
     createdAt: message.createdAt

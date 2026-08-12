@@ -9,8 +9,7 @@ const textMessageSchema = z.object({
   createdAt: z.string()
 }).transform(({ caseVersionId, ...message }) => ({
   ...message,
-  caseVersionId,
-  messageId: String(caseVersionId)
+  caseVersionId
 }));
 
 const mediaMessageSchema = z.object({
@@ -28,8 +27,7 @@ const mediaMessageSchema = z.object({
   createdAt: z.string()
 }).transform(({ caseVersionId, ...message }) => ({
   ...message,
-  caseVersionId,
-  messageId: String(caseVersionId)
+  caseVersionId
 }));
 
 export const caseSchema = z.object({

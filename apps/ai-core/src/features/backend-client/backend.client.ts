@@ -29,7 +29,7 @@ export class BackendClient {
       caseId: caseData.caseId,
       caseVersionId: caseData.caseVersionId,
       messages: caseData.messages.map((message) => ({
-        messageId: message.messageId,
+        caseVersionId: message.caseVersionId,
         type: message.type,
         mediaId: message.type === 'text' ? undefined : message.media.mediaId
       }))

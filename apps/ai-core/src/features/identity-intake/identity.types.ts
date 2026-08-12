@@ -1,6 +1,6 @@
 export type EvidenceItem = {
   id: string;
-  sourceMessageId: string;
+  sourceCaseVersionId: number;
   type: 'text' | 'audio_transcript' | 'image_text' | 'document_text';
   content: string;
   createdAt: string;

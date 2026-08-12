@@ -107,7 +107,7 @@ function fieldJsonSchema() {
 
 function buildPrompt(evidence: EvidenceItem[]) {
   const evidenceText = evidence
-    .map((item) => `[${item.type} ${item.sourceMessageId}] ${item.content}`)
+    .map((item) => `[${item.type} ${item.sourceCaseVersionId}] ${item.content}`)
     .join('\n');
 
   return `Extrae exclusivamente estos datos de identidad para asistencia: poliza, nombre y apellido.
