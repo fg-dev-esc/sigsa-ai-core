@@ -22,6 +22,12 @@ export class BackendClient {
     }
 
     const body = await response.json();
+
+    logStep('worker', 'backend case payload received', {
+      status: response.status,
+      payload: body
+    });
+
     const caseData = caseSchema.parse(body);
 
     logStep('worker', 'backend case received', {
