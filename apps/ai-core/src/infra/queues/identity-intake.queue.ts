@@ -9,9 +9,9 @@ export const identityIntakeQueue = new Queue<IdentityIntakeJob, void, string>(qu
     attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 5000
+      delay: 60000
     },
-    removeOnComplete: 1000,
-    removeOnFail: 5000
+    removeOnComplete: true,
+    removeOnFail: true
   }
 });

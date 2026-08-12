@@ -36,7 +36,11 @@ export function startIdentityIntakeWorker() {
     },
     {
       connection,
-      concurrency: 1
+      concurrency: 1,
+      limiter: {
+        max: 1,
+        duration: 10000
+      }
     }
   );
 
