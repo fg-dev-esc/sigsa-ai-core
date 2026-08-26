@@ -25,10 +25,8 @@ export function createEventsRouter() {
       );
 
       logStep('ai-core', 'event queued', {
-        queue: 'identity-intake.queue',
         caseId: event.caseId,
         caseVersion: event.caseVersion,
-        jobId,
         correlationId
       });
 

@@ -29,7 +29,10 @@ export class ProcessIdentityIntakeUseCase {
       caseId: caseData.caseId,
       caseVersion: caseData.caseVersion,
       correlationId: job.correlationId,
-      evidence
+      evidence: evidence.map((item) => ({
+        type: item.type,
+        content: item.content
+      }))
     });
 
     const extraction = await this.identityExtraction.extract(evidence, job.correlationId);
@@ -45,9 +48,11 @@ export class ProcessIdentityIntakeUseCase {
 
     logStep('worker', 'result sent', {
       correlationId: job.correlationId,
-      endpoint: '/results',
       backendStatus,
-      result
+      caseId: result.caseId,
+      status: result.status,
+      fields: result.fields,
+      missing: result.missing
     });
   }
 

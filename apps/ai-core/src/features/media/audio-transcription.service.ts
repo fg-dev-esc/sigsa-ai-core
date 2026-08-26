@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { env } from '../../config/env';
-import { GroqClient } from '../../infra/groq/groq.client';
+import { GroqClient, summarizeGroqUsage } from '../../infra/groq/groq.client';
 import { logStep } from '../../infra/logger/logger';
 import type { DownloadedMedia } from './media-downloader.service';
 
@@ -16,16 +16,10 @@ export class AudioTranscriptionService {
     logStep('worker', 'groq request', {
       correlationId,
       operation: 'transcription',
-      request: {
-        model: env.GROQ_TRANSCRIPTION_MODEL,
-        mediaId: media.mediaId,
-        mimeType: media.mimeType,
-        filename: media.filename,
-        sizeBytes: media.sizeBytes,
-        language: 'es',
-        temperature: 0,
-        prompt
-      }
+      model: env.GROQ_TRANSCRIPTION_MODEL,
+      mediaId: media.mediaId,
+      mimeType: media.mimeType,
+      sizeBytes: media.sizeBytes
     });
 
     const response = await this.groqClient.transcribeAudio({
@@ -40,8 +34,8 @@ export class AudioTranscriptionService {
     logStep('worker', 'groq response', {
       correlationId,
       operation: 'transcription',
-      response,
-      text
+      text,
+      usage: summarizeGroqUsage(response)
     });
 
     return text;

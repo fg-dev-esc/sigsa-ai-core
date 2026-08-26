@@ -90,3 +90,27 @@ export class GroqClient {
     return env.GROQ_API_KEY;
   }
 }
+
+export function summarizeGroqUsage(response: unknown) {
+  if (!response || typeof response !== 'object' || !('usage' in response)) return undefined;
+
+  const usage = response.usage;
+  if (!usage || typeof usage !== 'object') return undefined;
+
+  return {
+    promptTokens: numberValue(usage, 'prompt_tokens'),
+    completionTokens: numberValue(usage, 'completion_tokens'),
+    totalTokens: numberValue(usage, 'total_tokens'),
+    durationMs: millisecondsValue(usage, 'total_time')
+  };
+}
+
+function numberValue(value: object, key: string) {
+  const field = (value as Record<string, unknown>)[key];
+  return typeof field === 'number' ? field : undefined;
+}
+
+function millisecondsValue(value: object, key: string) {
+  const seconds = numberValue(value, key);
+  return seconds === undefined ? undefined : Math.round(seconds * 1000);
+}

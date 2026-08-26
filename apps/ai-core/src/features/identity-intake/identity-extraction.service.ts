@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { env } from '../../config/env';
-import { GroqClient } from '../../infra/groq/groq.client';
+import { GroqClient, summarizeGroqUsage } from '../../infra/groq/groq.client';
 import { logStep } from '../../infra/logger/logger';
 import type { EvidenceItem, ExtractedIdentityField, IdentityExtraction } from './identity.types';
 
@@ -67,7 +67,8 @@ export class IdentityExtractionService {
     logStep('worker', 'groq request', {
       correlationId,
       operation: 'identity_extraction',
-      request
+      model: env.GROQ_IDENTITY_MODEL,
+      evidenceCount: evidence.length
     });
 
     const response = await this.groqClient.createChatCompletion(request);
@@ -80,10 +81,8 @@ export class IdentityExtractionService {
     logStep('worker', 'groq response', {
       correlationId,
       operation: 'identity_extraction',
-      response,
-      content,
-      rawExtraction,
-      normalizedExtraction: extraction
+      fields: extraction,
+      usage: summarizeGroqUsage(response)
     });
 
     return extraction;

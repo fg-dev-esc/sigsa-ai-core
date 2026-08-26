@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { env } from '../../config/env';
-import { GroqClient } from '../../infra/groq/groq.client';
+import { GroqClient, summarizeGroqUsage } from '../../infra/groq/groq.client';
 import { logStep } from '../../infra/logger/logger';
 import type { DownloadedMedia } from './media-downloader.service';
 
@@ -30,20 +30,10 @@ export class ImageOcrService {
     logStep('worker', 'groq request', {
       correlationId,
       operation: 'vision',
-      request: {
-        model: env.GROQ_VISION_MODEL,
-        prompt,
-        image: {
-          mediaId: media.mediaId,
-          mimeType: media.mimeType,
-          filename: media.filename,
-          sizeBytes: media.sizeBytes,
-          dataUrlChars: dataUrl.length
-        },
-        temperature: 0.2,
-        max_completion_tokens: 1024,
-        responseFormat: { type: 'json_object' }
-      },
+      model: env.GROQ_VISION_MODEL,
+      mediaId: media.mediaId,
+      mimeType: media.mimeType,
+      sizeBytes: media.sizeBytes
     });
 
     const response = await this.groqClient.createChatCompletion({
@@ -76,10 +66,9 @@ export class ImageOcrService {
     logStep('worker', 'groq response', {
       correlationId,
       operation: 'vision',
-      response,
-      content,
-      result,
-      visibleText
+      visibleText,
+      isLegible: result.isLegible,
+      usage: summarizeGroqUsage(response)
     });
 
     if (!result.isLegible) {
