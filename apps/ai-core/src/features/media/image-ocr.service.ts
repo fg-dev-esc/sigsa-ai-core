@@ -25,7 +25,7 @@ export class ImageOcrService {
 
   async extractText(media: DownloadedMedia, correlationId?: string): Promise<string> {
     const prompt =
-      'Lee esta imagen y extrae texto visible relacionado con poliza, nombre y apellido. Responde solo JSON con visibleText, isLegible y notes. visibleText debe ser un string, no un array.';
+      'Transcribe literalmente el texto visible relacionado con poliza, nombre y apellido. Conserva valores raros o mal escritos; no corrijas, inventes ni completes informacion. Si nada es legible, usa visibleText vacio e isLegible false. Devuelve solo JSON con visibleText, isLegible y notes; visibleText debe ser un string.';
     const dataUrl = `data:${media.mimeType};base64,${media.buffer.toString('base64')}`;
     logStep('worker', 'groq request', {
       correlationId,

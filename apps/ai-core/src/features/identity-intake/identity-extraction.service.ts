@@ -108,19 +108,15 @@ function buildPrompt(evidence: EvidenceItem[]) {
     .map((item) => `[${item.type} ${item.sourceMessageId}] ${item.content}`)
     .join('\n');
 
-  return `Extrae exclusivamente estos datos de identidad para asistencia: poliza, nombre y apellido.
+  return `Extrae literalmente poliza, nombre y apellido cuando esten claramente identificados.
 
 Reglas:
-- No inventes datos.
-- Si un dato no aparece o no es legible, usa value null, confidence 0 y source none.
+- Conserva cada valor como aparece, aunque sea raro o este mal escrito.
+- No corrijas, inventes, completes ni dividas informacion ambigua.
+- Si un campo es insuficiente o contradictorio, usa value null, confidence 0 y source none.
 - La poliza puede contener letras y numeros.
-- El nombre y apellido deben venir de la persona asegurada o solicitante.
-- El source debe ser el canal original de la evidencia, no el formato intermedio.
-- Usa source image si el dato viene de image_text, aunque image_text sea texto OCR.
-- Usa source audio si el dato viene de audio_transcript, aunque audio_transcript sea una transcripcion.
-- Usa source text solo si el dato viene de una evidencia tipo text.
-- Usa source mixed solo si el mismo dato aparece en mas de un canal original.
-- Devuelve solo el JSON que cumple el schema.
+- Usa como source el canal original: text, audio, image, document o mixed.
+- Devuelve solo el JSON solicitado.
 
 Evidencia:
 ${evidenceText}`;
