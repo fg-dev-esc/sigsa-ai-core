@@ -13,6 +13,13 @@ export function createEventsRouter() {
       const correlationId = crypto.randomUUID();
       const jobId = crypto.randomUUID();
 
+      logStep('ai-core', 'event received', {
+        correlationId,
+        method: 'POST',
+        path: '/events',
+        event
+      });
+
       await identityIntakeQueue.add(
         'identity-intake',
         {
@@ -27,6 +34,7 @@ export function createEventsRouter() {
       logStep('ai-core', 'event queued', {
         caseId: event.caseId,
         caseVersion: event.caseVersion,
+        jobId,
         correlationId
       });
 

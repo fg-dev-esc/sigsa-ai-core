@@ -22,7 +22,7 @@ export class ProcessIdentityIntakeUseCase {
   ) {}
 
   async execute(job: IdentityIntakeJob): Promise<void> {
-    const caseData = await this.backendClient.getCase(job.caseId);
+    const caseData = await this.backendClient.getCase(job.caseId, job.correlationId);
     const evidence = await this.buildEvidence(caseData, job.correlationId);
 
     logStep('worker', 'input prepared', {
@@ -44,16 +44,15 @@ export class ProcessIdentityIntakeUseCase {
       correlationId: job.correlationId
     });
 
-    const backendStatus = await this.backendClient.postIdentityIntakeResult(result);
-
-    logStep('worker', 'result sent', {
+    logStep('worker', 'identity validated', {
       correlationId: job.correlationId,
-      backendStatus,
       caseId: result.caseId,
       status: result.status,
       fields: result.fields,
       missing: result.missing
     });
+
+    await this.backendClient.postIdentityIntakeResult(result, job.correlationId);
   }
 
   private async buildEvidence(caseData: BackendCase, correlationId: string): Promise<EvidenceItem[]> {
@@ -69,13 +68,13 @@ export class ProcessIdentityIntakeUseCase {
       }
 
       if (message.type === 'audio') {
-        const item = await this.safeMediaEvidence(message, () => this.audioEvidence(message, correlationId));
+        const item = await this.safeMediaEvidence(message, correlationId, () => this.audioEvidence(message, correlationId));
         if (item) evidence.push(item);
         continue;
       }
 
       if (message.type === 'image') {
-        const item = await this.safeMediaEvidence(message, () => this.imageEvidence(message, correlationId));
+        const item = await this.safeMediaEvidence(message, correlationId, () => this.imageEvidence(message, correlationId));
         if (item) evidence.push(item);
         continue;
       }
@@ -93,11 +92,16 @@ export class ProcessIdentityIntakeUseCase {
     return evidence;
   }
 
-  private async safeMediaEvidence(message: MediaBackendMessage, build: () => Promise<EvidenceItem>) {
+  private async safeMediaEvidence(
+    message: MediaBackendMessage,
+    correlationId: string,
+    build: () => Promise<EvidenceItem>
+  ) {
     try {
       return await build();
     } catch (error) {
       logError('worker', 'media evidence skipped', error, {
+        correlationId,
         messageId: message.messageId,
         type: message.type,
         mediaId: message.media.mediaId,
@@ -111,11 +115,12 @@ export class ProcessIdentityIntakeUseCase {
   private async audioEvidence(message: MediaBackendMessage, correlationId: string): Promise<EvidenceItem> {
     const media = await this.mediaDownloader.download({
       type: 'audio',
-      mediaId: message.media.mediaId,
-      downloadUrl: message.media.downloadUrl,
-      mimeType: message.media.mimeType,
-      sizeBytes: message.media.sizeBytes,
-      filename: message.media.filename
+        mediaId: message.media.mediaId,
+        downloadUrl: message.media.downloadUrl,
+        mimeType: message.media.mimeType,
+        sizeBytes: message.media.sizeBytes,
+        filename: message.media.filename,
+        correlationId
     });
     const transcript = await this.audioTranscription.transcribe(media, correlationId);
 
@@ -136,7 +141,8 @@ export class ProcessIdentityIntakeUseCase {
       downloadUrl: message.media.downloadUrl,
       mimeType: message.media.mimeType,
       sizeBytes: message.media.sizeBytes,
-      filename: message.media.filename
+      filename: message.media.filename,
+      correlationId
     });
     const text = await this.imageOcr.extractText(media, correlationId);
 

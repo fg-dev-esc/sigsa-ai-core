@@ -1,4 +1,5 @@
 import { env } from '../../config/env';
+import { logStep } from '../../infra/logger/logger';
 
 export type DownloadedMedia = {
   mediaId?: string;
@@ -16,8 +17,17 @@ export class MediaDownloaderService {
     sizeBytes: number;
     filename?: string;
     type: 'audio' | 'image' | 'document';
+    correlationId?: string;
   }): Promise<DownloadedMedia> {
     const maxBytes = this.getMaxBytes(input.type);
+
+    logStep('worker', 'media requested', {
+      correlationId: input.correlationId,
+      method: 'GET',
+      url: input.downloadUrl,
+      mediaId: input.mediaId,
+      type: input.type
+    });
 
     if (input.sizeBytes > maxBytes) {
       throw new Error(`Media exceeds max size for ${input.type}`);
@@ -43,6 +53,14 @@ export class MediaDownloaderService {
       filename: input.filename ?? `media-${Date.now()}`,
       sizeBytes: buffer.byteLength
     };
+
+    logStep('worker', 'media received', {
+      correlationId: input.correlationId,
+      status: response.status,
+      mediaId: downloaded.mediaId,
+      mimeType: downloaded.mimeType,
+      sizeBytes: downloaded.sizeBytes
+    });
 
     return downloaded;
   }
