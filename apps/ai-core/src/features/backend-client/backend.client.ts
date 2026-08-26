@@ -1,16 +1,17 @@
 import { env } from '../../config/env';
-import { logStep } from '../../infra/logger/logger';
+import { logDebug, logStep } from '../../infra/logger/logger';
 import { caseSchema } from './backend.schemas';
 import type { BackendCase } from './backend.schemas';
 import type { IdentityIntakeResult } from '../identity-intake/identity.types';
 
 export class BackendClient {
-  async getCase(caseId: string): Promise<BackendCase> {
+  async getCase(caseId: string, correlationId?: string): Promise<BackendCase> {
     const url = buildBackendUrl(env.BACKEND_CASE_PATH, caseId);
 
     logStep('worker', 'backend case requested', {
       method: 'GET',
-      url
+      url,
+      correlationId
     });
 
     const response = await fetch(url, {
@@ -22,10 +23,16 @@ export class BackendClient {
     }
 
     const body = await response.json();
+    logDebug('worker', 'backend case raw response', {
+      correlationId,
+      status: response.status,
+      body
+    });
     const caseData = caseSchema.parse(body);
 
     logStep('worker', 'backend case received', {
       status: response.status,
+      correlationId,
       caseId: caseData.caseId,
       caseVersion: caseData.caseVersion,
       messages: caseData.messages.map((message) => ({
@@ -38,12 +45,13 @@ export class BackendClient {
     return caseData;
   }
 
-  async postIdentityIntakeResult(result: IdentityIntakeResult): Promise<void> {
+  async postIdentityIntakeResult(result: IdentityIntakeResult, correlationId?: string): Promise<void> {
     const url = buildBackendUrl(env.BACKEND_RESULTS_PATH);
 
     logStep('worker', 'backend result requested', {
       method: 'POST',
       url,
+      correlationId,
       payload: {
         caseId: result.caseId,
         caseVersion: result.caseVersion,
@@ -67,7 +75,8 @@ export class BackendClient {
     }
 
     logStep('worker', 'backend result accepted', {
-      status: response.status
+      status: response.status,
+      correlationId
     });
   }
 

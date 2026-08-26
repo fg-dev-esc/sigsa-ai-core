@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../config/env';
 import { GroqClient } from '../../infra/groq/groq.client';
-import { logStep } from '../../infra/logger/logger';
+import { logDebug, logStep } from '../../infra/logger/logger';
 import type { EvidenceItem, ExtractedIdentityField, IdentityExtraction } from './identity.types';
 
 const groqChatResponseSchema = z.object({
@@ -40,24 +40,19 @@ const identityJsonSchema = {
 export class IdentityExtractionService {
   constructor(private readonly groqClient = new GroqClient()) {}
 
-  async extract(evidence: EvidenceItem[]): Promise<IdentityExtraction> {
-    logStep('worker', 'groq identity extraction requested', {
-      provider: 'groq',
-      model: env.GROQ_IDENTITY_MODEL,
-      evidence: countEvidence(evidence)
-    });
-
-    const response = await this.groqClient.createChatCompletion({
+  async extract(evidence: EvidenceItem[], correlationId?: string): Promise<IdentityExtraction> {
+    const prompt = buildPrompt(evidence);
+    const request = {
       model: env.GROQ_IDENTITY_MODEL,
       messages: [
         {
-          role: 'user',
-          content: buildPrompt(evidence)
+          role: 'user' as const,
+          content: prompt
         }
       ],
       temperature: 0.2,
       max_completion_tokens: 1024,
-      reasoning_effort: 'low',
+      reasoning_effort: 'low' as const,
       include_reasoning: false,
       response_format: {
         type: 'json_schema',
@@ -67,13 +62,40 @@ export class IdentityExtractionService {
           schema: identityJsonSchema
         }
       }
+    };
+
+    logStep('worker', 'groq identity extraction requested', {
+      provider: 'groq',
+      model: env.GROQ_IDENTITY_MODEL,
+      evidence: countEvidence(evidence),
+      correlationId
+    });
+
+    logDebug('worker', 'groq identity extraction request', {
+      correlationId,
+      request
+    });
+
+    const response = await this.groqClient.createChatCompletion(request);
+
+    logDebug('worker', 'groq identity extraction raw response', {
+      correlationId,
+      response
     });
 
     const parsed = groqChatResponseSchema.parse(response);
     const content = parsed.choices[0]?.message.content ?? '{}';
-    const extraction = normalizeExtractionSources(identityExtractionSchema.parse(JSON.parse(content)), evidence);
+    const rawExtraction = identityExtractionSchema.parse(JSON.parse(content));
+    const extraction = normalizeExtractionSources(rawExtraction, evidence);
 
-    logStep('worker', 'groq identity extraction received', extraction);
+    logDebug('worker', 'groq identity extraction parsed', {
+      correlationId,
+      content,
+      rawExtraction,
+      normalizedExtraction: extraction
+    });
+
+    logStep('worker', 'groq identity extraction received', { correlationId, ...extraction });
 
     return extraction;
   }

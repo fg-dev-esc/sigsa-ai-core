@@ -1,6 +1,6 @@
 import { BackendClient } from '../backend-client/backend.client';
 import type { BackendCase, BackendMessage } from '../backend-client/backend.schemas';
-import { logError, logStep } from '../../infra/logger/logger';
+import { logDebug, logError, logStep } from '../../infra/logger/logger';
 import { AudioTranscriptionService } from '../media/audio-transcription.service';
 import { ImageOcrService } from '../media/image-ocr.service';
 import { MediaDownloaderService } from '../media/media-downloader.service';
@@ -22,19 +22,24 @@ export class ProcessIdentityIntakeUseCase {
   ) {}
 
   async execute(job: IdentityIntakeJob): Promise<void> {
-    const caseData = await this.backendClient.getCase(job.caseId);
+    const caseData = await this.backendClient.getCase(job.caseId, job.correlationId);
 
     logStep('worker', 'case loaded', {
       caseId: caseData.caseId,
       caseVersion: caseData.caseVersion,
-      messages: caseData.messages.length
+      messages: caseData.messages.length,
+      correlationId: job.correlationId
     });
 
-    const evidence = await this.buildEvidence(caseData);
+    const evidence = await this.buildEvidence(caseData, job.correlationId);
 
-    logStep('worker', 'evidence built', countEvidence(evidence));
+    logStep('worker', 'evidence built', {
+      ...countEvidence(evidence),
+      correlationId: job.correlationId
+    });
+    logDebug('worker', 'evidence detail', { correlationId: job.correlationId, evidence });
 
-    const extraction = await this.identityExtraction.extract(evidence);
+    const extraction = await this.identityExtraction.extract(evidence, job.correlationId);
 
     const result = this.identityValidation.validate({
       caseId: caseData.caseId,
@@ -47,22 +52,32 @@ export class ProcessIdentityIntakeUseCase {
       caseId: result.caseId,
       status: result.status,
       missing: result.missing,
-      fields: result.fields
+      fields: result.fields,
+      correlationId: job.correlationId
     });
 
-    await this.backendClient.postIdentityIntakeResult(result);
+    logDebug('worker', 'validated identity result', { correlationId: job.correlationId, result });
+
+    await this.backendClient.postIdentityIntakeResult(result, job.correlationId);
 
     logStep('worker', 'result sent', {
       caseId: result.caseId,
-      endpoint: '/results'
+      endpoint: '/results',
+      correlationId: job.correlationId
     });
   }
 
-  private async buildEvidence(caseData: BackendCase): Promise<EvidenceItem[]> {
+  private async buildEvidence(caseData: BackendCase, correlationId: string): Promise<EvidenceItem[]> {
     const evidence: EvidenceItem[] = [];
     const messages = [...caseData.messages]
       .filter((message) => message.direction === 'inbound')
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    logDebug('worker', 'inbound messages selected', {
+      correlationId,
+      totalMessages: caseData.messages.length,
+      messages
+    });
 
     for (const message of messages) {
       if (message.type === 'text') {
@@ -71,13 +86,13 @@ export class ProcessIdentityIntakeUseCase {
       }
 
       if (message.type === 'audio') {
-        const item = await this.safeMediaEvidence(message, () => this.audioEvidence(message));
+        const item = await this.safeMediaEvidence(message, () => this.audioEvidence(message, correlationId));
         if (item) evidence.push(item);
         continue;
       }
 
       if (message.type === 'image') {
-        const item = await this.safeMediaEvidence(message, () => this.imageEvidence(message));
+        const item = await this.safeMediaEvidence(message, () => this.imageEvidence(message, correlationId));
         if (item) evidence.push(item);
         continue;
       }
@@ -110,7 +125,7 @@ export class ProcessIdentityIntakeUseCase {
     }
   }
 
-  private async audioEvidence(message: MediaBackendMessage): Promise<EvidenceItem> {
+  private async audioEvidence(message: MediaBackendMessage, correlationId: string): Promise<EvidenceItem> {
     const media = await this.mediaDownloader.download({
       type: 'audio',
       mediaId: message.media.mediaId,
@@ -119,7 +134,7 @@ export class ProcessIdentityIntakeUseCase {
       sizeBytes: message.media.sizeBytes,
       filename: message.media.filename
     });
-    const transcript = await this.audioTranscription.transcribe(media);
+    const transcript = await this.audioTranscription.transcribe(media, correlationId);
 
     return {
       id: `${message.messageId}:audio`,
@@ -131,7 +146,7 @@ export class ProcessIdentityIntakeUseCase {
     };
   }
 
-  private async imageEvidence(message: MediaBackendMessage): Promise<EvidenceItem> {
+  private async imageEvidence(message: MediaBackendMessage, correlationId: string): Promise<EvidenceItem> {
     const media = await this.mediaDownloader.download({
       type: 'image',
       mediaId: message.media.mediaId,
@@ -140,7 +155,7 @@ export class ProcessIdentityIntakeUseCase {
       sizeBytes: message.media.sizeBytes,
       filename: message.media.filename
     });
-    const text = await this.imageOcr.extractText(media);
+    const text = await this.imageOcr.extractText(media, correlationId);
 
     return {
       id: `${message.messageId}:image`,

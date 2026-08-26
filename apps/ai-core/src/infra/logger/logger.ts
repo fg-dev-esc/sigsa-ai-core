@@ -1,5 +1,17 @@
+import { env } from '../../config/env';
+
 export function logStep(scope: string, message: string, payload?: unknown) {
   console.log(`[${scope}] ${message}`);
+
+  if (payload !== undefined) {
+    console.log(JSON.stringify(payload, null, 2));
+  }
+}
+
+export function logDebug(scope: string, message: string, payload?: unknown) {
+  if (env.LOG_LEVEL.toLowerCase() !== 'debug') return;
+
+  console.log(`[${scope}] DEBUG ${message}`);
 
   if (payload !== undefined) {
     console.log(JSON.stringify(payload, null, 2));

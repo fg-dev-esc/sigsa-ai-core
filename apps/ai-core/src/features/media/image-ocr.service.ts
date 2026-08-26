@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../config/env';
 import { GroqClient } from '../../infra/groq/groq.client';
-import { logStep } from '../../infra/logger/logger';
+import { logDebug, logStep } from '../../infra/logger/logger';
 import type { DownloadedMedia } from './media-downloader.service';
 
 const groqChatResponseSchema = z.object({
@@ -23,16 +23,35 @@ const imageOcrSchema = z.object({
 export class ImageOcrService {
   constructor(private readonly groqClient = new GroqClient()) {}
 
-  async extractText(media: DownloadedMedia): Promise<string> {
+  async extractText(media: DownloadedMedia, correlationId?: string): Promise<string> {
+    const prompt =
+      'Lee esta imagen y extrae texto visible relacionado con poliza, nombre y apellido. Responde solo JSON con visibleText, isLegible y notes. visibleText debe ser un string, no un array.';
     logStep('worker', 'groq vision requested', {
       provider: 'groq',
       model: env.GROQ_VISION_MODEL,
       mediaId: media.mediaId,
       mimeType: media.mimeType,
-      sizeBytes: media.sizeBytes
+      sizeBytes: media.sizeBytes,
+      correlationId
     });
 
     const dataUrl = `data:${media.mimeType};base64,${media.buffer.toString('base64')}`;
+    logDebug('worker', 'groq vision request', {
+      correlationId,
+      model: env.GROQ_VISION_MODEL,
+      prompt,
+      image: {
+        mediaId: media.mediaId,
+        mimeType: media.mimeType,
+        filename: media.filename,
+        sizeBytes: media.sizeBytes,
+        dataUrlChars: dataUrl.length
+      },
+      temperature: 0.2,
+      max_completion_tokens: 1024,
+      responseFormat: { type: 'json_object' }
+    });
+
     const response = await this.groqClient.createChatCompletion({
       model: env.GROQ_VISION_MODEL,
       messages: [
@@ -41,8 +60,7 @@ export class ImageOcrService {
           content: [
             {
               type: 'text',
-              text:
-                'Lee esta imagen y extrae texto visible relacionado con poliza, nombre y apellido. Responde solo JSON con visibleText, isLegible y notes. visibleText debe ser un string, no un array.'
+              text: prompt
             },
             {
               type: 'image_url',
@@ -56,6 +74,8 @@ export class ImageOcrService {
       response_format: { type: 'json_object' }
     });
 
+    logDebug('worker', 'groq vision raw response', { correlationId, response });
+
     const parsed = groqChatResponseSchema.parse(response);
     const content = parsed.choices[0]?.message.content ?? '{}';
     const result = imageOcrSchema.parse(JSON.parse(content));
@@ -66,8 +86,11 @@ export class ImageOcrService {
       legible: result.isLegible,
       chars: visibleText.length,
       preview: previewText(visibleText),
-      notes: result.notes || undefined
+      notes: result.notes || undefined,
+      correlationId
     });
+
+    logDebug('worker', 'groq vision parsed', { correlationId, content, result, visibleText });
 
     if (!result.isLegible) {
       return `Imagen no legible. Notas: ${result.notes}`;
