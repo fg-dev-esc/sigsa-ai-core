@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../config/env';
 import { GroqClient } from '../../infra/groq/groq.client';
-import { logDebug, logStep } from '../../infra/logger/logger';
+import { logStep } from '../../infra/logger/logger';
 import type { EvidenceItem, ExtractedIdentityField, IdentityExtraction } from './identity.types';
 
 const groqChatResponseSchema = z.object({
@@ -64,54 +64,30 @@ export class IdentityExtractionService {
       }
     };
 
-    logStep('worker', 'groq identity extraction requested', {
-      provider: 'groq',
-      model: env.GROQ_IDENTITY_MODEL,
-      evidence: countEvidence(evidence),
-      correlationId
-    });
-
-    logDebug('worker', 'groq identity extraction request', {
+    logStep('worker', 'groq request', {
       correlationId,
+      operation: 'identity_extraction',
       request
     });
 
     const response = await this.groqClient.createChatCompletion(request);
-
-    logDebug('worker', 'groq identity extraction raw response', {
-      correlationId,
-      response
-    });
 
     const parsed = groqChatResponseSchema.parse(response);
     const content = parsed.choices[0]?.message.content ?? '{}';
     const rawExtraction = identityExtractionSchema.parse(JSON.parse(content));
     const extraction = normalizeExtractionSources(rawExtraction, evidence);
 
-    logDebug('worker', 'groq identity extraction parsed', {
+    logStep('worker', 'groq response', {
       correlationId,
+      operation: 'identity_extraction',
+      response,
       content,
       rawExtraction,
       normalizedExtraction: extraction
     });
 
-    logStep('worker', 'groq identity extraction received', { correlationId, ...extraction });
-
     return extraction;
   }
-}
-
-function countEvidence(evidence: EvidenceItem[]) {
-  return evidence.reduce(
-    (acc, item) => {
-      if (item.type === 'text') acc.text += 1;
-      if (item.type === 'audio_transcript') acc.audio += 1;
-      if (item.type === 'image_text') acc.image += 1;
-      if (item.type === 'document_text') acc.document += 1;
-      return acc;
-    },
-    { text: 0, audio: 0, image: 0, document: 0 }
-  );
 }
 
 function fieldJsonSchema() {

@@ -13,13 +13,6 @@ export function createEventsRouter() {
       const correlationId = crypto.randomUUID();
       const jobId = crypto.randomUUID();
 
-      logStep('ai-core', 'event received', {
-        method: 'POST',
-        path: '/events',
-        payload: event,
-        correlationId
-      });
-
       await identityIntakeQueue.add(
         'identity-intake',
         {
@@ -31,19 +24,15 @@ export function createEventsRouter() {
         }
       );
 
-      logStep('ai-core', 'job queued', {
+      logStep('ai-core', 'event queued', {
         queue: 'identity-intake.queue',
         caseId: event.caseId,
         caseVersion: event.caseVersion,
-        jobId
+        jobId,
+        correlationId
       });
 
       const responsePayload = { accepted: true, correlationId };
-
-      logStep('ai-core', 'event accepted', {
-        status: 200,
-        response: responsePayload
-      });
 
       res.status(200).json(responsePayload);
     } catch (error) {

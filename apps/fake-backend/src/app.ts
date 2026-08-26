@@ -380,7 +380,9 @@ function defaultMimeType(type: 'image' | 'audio') {
 }
 
 function getMediaDownloadUrl(mediaId: string) {
-  return `http://localhost:${env.FAKE_BACKEND_PORT}/media/${encodeURIComponent(mediaId)}/download`;
+  const baseUrl = (env.FAKE_BACKEND_PUBLIC_URL ?? `http://localhost:${env.FAKE_BACKEND_PORT}`).replace(/\/$/, '');
+
+  return `${baseUrl}/media/${encodeURIComponent(mediaId)}/download`;
 }
 
 function getCaseData(caseId: string): CaseFixture | undefined {

@@ -12,21 +12,7 @@ export function startIdentityIntakeWorker() {
     queueNames.identityIntake,
     async (job) => {
       try {
-        logStep('worker', 'job started', {
-          caseId: job.data.caseId,
-          jobId: job.id,
-          caseVersion: job.data.caseVersion,
-          correlationId: job.data.correlationId
-        });
-
         await processor.execute(job.data);
-
-        logStep('worker', 'job completed', {
-          caseId: job.data.caseId,
-          jobId: job.id,
-          caseVersion: job.data.caseVersion,
-          correlationId: job.data.correlationId
-        });
       } catch (error) {
         logError('worker', 'job failed', error, {
           caseId: job.data.caseId,
@@ -42,10 +28,6 @@ export function startIdentityIntakeWorker() {
       concurrency: 1
     }
   );
-
-  worker.on('failed', (job, error) => {
-    logError('worker', 'failed event', error, { jobId: job?.id });
-  });
 
   logStep('worker', 'listening', { queue: queueNames.identityIntake });
 

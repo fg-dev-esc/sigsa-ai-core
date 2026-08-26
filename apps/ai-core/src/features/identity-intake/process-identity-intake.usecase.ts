@@ -1,6 +1,6 @@
 import { BackendClient } from '../backend-client/backend.client';
 import type { BackendCase, BackendMessage } from '../backend-client/backend.schemas';
-import { logDebug, logError, logStep } from '../../infra/logger/logger';
+import { logError, logStep } from '../../infra/logger/logger';
 import { AudioTranscriptionService } from '../media/audio-transcription.service';
 import { ImageOcrService } from '../media/image-ocr.service';
 import { MediaDownloaderService } from '../media/media-downloader.service';
@@ -22,22 +22,15 @@ export class ProcessIdentityIntakeUseCase {
   ) {}
 
   async execute(job: IdentityIntakeJob): Promise<void> {
-    const caseData = await this.backendClient.getCase(job.caseId, job.correlationId);
-
-    logStep('worker', 'case loaded', {
-      caseId: caseData.caseId,
-      caseVersion: caseData.caseVersion,
-      messages: caseData.messages.length,
-      correlationId: job.correlationId
-    });
-
+    const caseData = await this.backendClient.getCase(job.caseId);
     const evidence = await this.buildEvidence(caseData, job.correlationId);
 
-    logStep('worker', 'evidence built', {
-      ...countEvidence(evidence),
-      correlationId: job.correlationId
+    logStep('worker', 'input prepared', {
+      caseId: caseData.caseId,
+      caseVersion: caseData.caseVersion,
+      correlationId: job.correlationId,
+      evidence
     });
-    logDebug('worker', 'evidence detail', { correlationId: job.correlationId, evidence });
 
     const extraction = await this.identityExtraction.extract(evidence, job.correlationId);
 
@@ -48,22 +41,13 @@ export class ProcessIdentityIntakeUseCase {
       correlationId: job.correlationId
     });
 
-    logStep('worker', result.status === 'complete' ? 'checklist complete' : 'checklist needs_input', {
-      caseId: result.caseId,
-      status: result.status,
-      missing: result.missing,
-      fields: result.fields,
-      correlationId: job.correlationId
-    });
-
-    logDebug('worker', 'validated identity result', { correlationId: job.correlationId, result });
-
-    await this.backendClient.postIdentityIntakeResult(result, job.correlationId);
+    const backendStatus = await this.backendClient.postIdentityIntakeResult(result);
 
     logStep('worker', 'result sent', {
-      caseId: result.caseId,
+      correlationId: job.correlationId,
       endpoint: '/results',
-      correlationId: job.correlationId
+      backendStatus,
+      result
     });
   }
 
@@ -72,12 +56,6 @@ export class ProcessIdentityIntakeUseCase {
     const messages = [...caseData.messages]
       .filter((message) => message.direction === 'inbound')
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-
-    logDebug('worker', 'inbound messages selected', {
-      correlationId,
-      totalMessages: caseData.messages.length,
-      messages
-    });
 
     for (const message of messages) {
       if (message.type === 'text') {
@@ -166,19 +144,6 @@ export class ProcessIdentityIntakeUseCase {
       mediaId: message.media.mediaId
     };
   }
-}
-
-function countEvidence(evidence: EvidenceItem[]) {
-  return evidence.reduce(
-    (acc, item) => {
-      if (item.type === 'text') acc.text += 1;
-      if (item.type === 'audio_transcript') acc.audio += 1;
-      if (item.type === 'image_text') acc.image += 1;
-      if (item.type === 'document_text') acc.document += 1;
-      return acc;
-    },
-    { text: 0, audio: 0, image: 0, document: 0 }
-  );
 }
 
 function textEvidence(message: Extract<BackendMessage, { type: 'text' }>): EvidenceItem {
